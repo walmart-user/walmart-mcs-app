@@ -3,14 +3,14 @@ api_version = "2025-04"
 [[extensions]]
 # Change the merchant-facing name of the extension in locales/en.default.json
 name = "t:name"
-handle = "walmart-order-tracker"
+handle = "walmart-product-sync"
 type = "ui_extension"
-uid = "4c8a6e65-e532-ea8b-4b31-3d7409f5739d33bf3efd"
+uid = "dd837f89-98d8-9caf-8c8f-10526d2194b2a6c476ae"
 
 # Only 1 target can be specified for each Admin action extension
 [[extensions.targeting]]
 module = "./src/ActionExtension.jsx"
-target = "admin.order-details.action.render"
+target = "admin.product-details.action.render"
 
 
 # Valid extension targets:

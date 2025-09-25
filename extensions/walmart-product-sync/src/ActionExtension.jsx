@@ -12,7 +12,7 @@ import {
 } from '@shopify/ui-extensions-react/admin';
 
 // The target used here must match the target used in the extension's toml file (./shopify.extension.toml)
-const TARGET = 'admin.order-details.action.render';
+const TARGET = 'admin.product-details.action.render';
 
 export default reactExtension(TARGET, () => <App />);
 
@@ -20,36 +20,35 @@ function App() {
   // The useApi hook provides access to several useful APIs like i18n, close, and data.
   const {i18n, close, data} = useApi(TARGET);
   console.log({data});
-  const [orderInfo, setOrderInfo] = useState({
-    orderNumber: '',
-    totalPrice: '',
-    customerEmail: '',
-    fulfillmentStatus: ''
+  const [productInfo, setProductInfo] = useState({
+    title: '',
+    price: '',
+    status: '',
+    inventory: ''
   });
   const [walmartSync, setWalmartSync] = useState({
     synced: false,
-    walmartOrderId: null,
-    lastSync: null
+    walmartItemId: null,
+    lastSync: null,
+    category: ''
   });
 
   // Use direct API calls to fetch data from Shopify.
   // See https://shopify.dev/docs/api/admin-graphql for more information about Shopify's GraphQL API
   useEffect(() => {
-    (async function getOrderInfo() {
-      const getOrderQuery = {
-        query: `query Order($id: ID!) {
-          order(id: $id) {
-            name
-            totalPriceSet {
-              shopMoney {
+    (async function getProductInfo() {
+      const getProductQuery = {
+        query: `query Product($id: ID!) {
+          product(id: $id) {
+            title
+            status
+            priceRangeV2 {
+              minVariantPrice {
                 amount
                 currencyCode
               }
             }
-            customer {
-              email
-            }
-            displayFulfillmentStatus
+            totalInventory
           }
         }`,
         variables: {id: data.selected[0].id},
@@ -57,38 +56,40 @@ function App() {
 
       const res = await fetch("shopify:admin/api/graphql.json", {
         method: "POST",
-        body: JSON.stringify(getOrderQuery),
+        body: JSON.stringify(getProductQuery),
       });
 
       if (!res.ok) {
         console.error('Network error');
       }
 
-      const orderData = await res.json();
-      const order = orderData.data.order;
-      setOrderInfo({
-        orderNumber: order.name,
-        totalPrice: `${order.totalPriceSet.shopMoney.amount} ${order.totalPriceSet.shopMoney.currencyCode}`,
-        customerEmail: order.customer?.email || 'Guest',
-        fulfillmentStatus: order.displayFulfillmentStatus
+      const productData = await res.json();
+      const product = productData.data.product;
+      setProductInfo({
+        title: product.title,
+        price: `${product.priceRangeV2.minVariantPrice.amount} ${product.priceRangeV2.minVariantPrice.currencyCode}`,
+        status: product.status,
+        inventory: product.totalInventory
       });
 
       // Simulate checking Walmart sync status (this would be a real API call in production)
       setWalmartSync({
-        synced: Math.random() > 0.5, // Random for demo
-        walmartOrderId: `WM${Date.now().toString().slice(-6)}`,
-        lastSync: new Date().toLocaleString()
+        synced: Math.random() > 0.3, // Random for demo
+        walmartItemId: `WM${Date.now().toString().slice(-8)}`,
+        lastSync: new Date().toLocaleString(),
+        category: 'Electronics' // This would come from your API
       });
     })();
   }, [data.selected]);
 
   const handleSyncToWalmart = () => {
-    console.log('Syncing order to Walmart...', orderInfo.orderNumber);
+    console.log('Syncing product to Walmart...', productInfo.title);
     // Here you would make an API call to your Vercel app to sync with Walmart
     setWalmartSync({
       synced: true,
-      walmartOrderId: `WM${Date.now().toString().slice(-6)}`,
-      lastSync: new Date().toLocaleString()
+      walmartItemId: `WM${Date.now().toString().slice(-8)}`,
+      lastSync: new Date().toLocaleString(),
+      category: 'Electronics'
     });
   };
 
@@ -100,7 +101,7 @@ function App() {
           onPress={handleSyncToWalmart}
           disabled={walmartSync.synced}
         >
-          {walmartSync.synced ? 'Synced' : 'Sync to Walmart'}
+          {walmartSync.synced ? 'Synced to Walmart' : 'Sync to Walmart'}
         </Button>
       }
       secondaryAction={
@@ -115,29 +116,29 @@ function App() {
       }
     >
       <BlockStack gap="300">
-        <Text fontWeight="bold">🛒 Walmart Order Tracker</Text>
+        <Text fontWeight="bold">🛍️ Walmart Product Sync</Text>
         
         <Divider />
         
         <BlockStack gap="200">
-          <Text fontWeight="semibold">Order Details</Text>
+          <Text fontWeight="semibold">Product Details</Text>
           <InlineStack gap="200">
-            <Text>Order:</Text>
-            <Text fontWeight="bold">{orderInfo.orderNumber}</Text>
+            <Text>Title:</Text>
+            <Text fontWeight="bold">{productInfo.title}</Text>
           </InlineStack>
           <InlineStack gap="200">
-            <Text>Total:</Text>
-            <Text>{orderInfo.totalPrice}</Text>
-          </InlineStack>
-          <InlineStack gap="200">
-            <Text>Customer:</Text>
-            <Text>{orderInfo.customerEmail}</Text>
+            <Text>Price:</Text>
+            <Text>{productInfo.price}</Text>
           </InlineStack>
           <InlineStack gap="200">
             <Text>Status:</Text>
-            <Badge tone={orderInfo.fulfillmentStatus === 'FULFILLED' ? 'success' : 'attention'}>
-              {orderInfo.fulfillmentStatus}
+            <Badge tone={productInfo.status === 'ACTIVE' ? 'success' : 'attention'}>
+              {productInfo.status}
             </Badge>
+          </InlineStack>
+          <InlineStack gap="200">
+            <Text>Inventory:</Text>
+            <Text>{productInfo.inventory} units</Text>
           </InlineStack>
         </BlockStack>
 
@@ -154,8 +155,12 @@ function App() {
           {walmartSync.synced && (
             <>
               <InlineStack gap="200">
-                <Text>Walmart Order ID:</Text>
-                <Text fontWeight="bold">{walmartSync.walmartOrderId}</Text>
+                <Text>Walmart Item ID:</Text>
+                <Text fontWeight="bold">{walmartSync.walmartItemId}</Text>
+              </InlineStack>
+              <InlineStack gap="200">
+                <Text>Category:</Text>
+                <Text>{walmartSync.category}</Text>
               </InlineStack>
               <InlineStack gap="200">
                 <Text>Last Sync:</Text>
