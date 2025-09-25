@@ -2,7 +2,7 @@
 
 client_id = "b028662cc5236f44034f7865c7344f65"
 name = "walmart-mcs-app"
-application_url = "https://example.com/"
+application_url = "https://walmart-mcs-app.vercel.app/"
 embedded = true
 handle = "walmart-mcs-app"
 
@@ -25,7 +25,12 @@ api_version = "2025-07"
 scopes = "write_products"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ 
+  "https://walmart-mcs-app.vercel.app/auth/callback",
+  "https://walmart-mcs-app.vercel.app/auth/shopify/callback", 
+  "https://walmart-mcs-app.vercel.app/api/auth/callback",
+  "https://walmart-mcs-app.vercel.app/api/auth"
+]
 
 [pos]
 embedded = false
