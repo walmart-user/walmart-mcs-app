@@ -8,6 +8,7 @@ import {
   Text,
   Badge,
   Divider,
+  Banner,
 } from '@shopify/ui-extensions-react/admin';
 
 // The target used here must match the target used in the extension's toml file (./shopify.extension.toml)
@@ -16,10 +17,11 @@ const TARGET = 'admin.order-details.block.render';
 export default reactExtension(TARGET, () => <App />);
 
 function App() {
-  // The useApi hook provides access to several useful APIs like i18n, close, and data.
-  const {i18n, data} = useApi(TARGET);
+  // The useApi hook provides access to several useful APIs like i18n, close, data, and ui.
+  const {i18n, data, ui} = useApi(TARGET);
   const [orderInfo, setOrderInfo] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [saveBarShown, setSaveBarShown] = useState(false);
   
   // Mock Walmart sync status - in real app, this would come from your API
   const [walmartOrderStatus, setWalmartOrderStatus] = useState({
@@ -81,15 +83,22 @@ function App() {
               trackingNumber: isSync && Math.random() > 0.5 ? '1Z999AA' + Math.random().toString(36).substr(2, 6).toUpperCase() : null,
               fulfillmentStatus: isSync ? (Math.random() > 0.5 ? 'Shipped' : 'Processing') : null,
             });
-            setIsLoading(false);
-          }, 800);
-        }
-      } catch (error) {
-        console.error('Error fetching order:', error);
-        setIsLoading(false);
+          setIsLoading(false);
+        }, 800);
       }
-    })();
-  }, [data]);
+    } catch (error) {
+      console.error('Error fetching order:', error);
+      setIsLoading(false);
+    }
+  })();
+}, [data]);
+
+// Effect to show contextual save bar when order status changes
+useEffect(() => {
+  if (!isLoading) {
+    showContextualSaveBar();
+  }
+}, [walmartOrderStatus, isLoading]);
 
   const getSyncStatusBadge = () => {
     if (isLoading) {
@@ -133,9 +142,97 @@ function App() {
     }
   };
 
+  // Function to show contextual save bar based on order status
+  const showContextualSaveBar = () => {
+    if (isLoading || saveBarShown) {
+      return; // Don't show if loading or already shown
+    }
+
+    // Show contextual save bar for unsynced orders
+    if (!walmartOrderStatus.synced) {
+      ui.contextualSaveBar.show({
+        saveAction: {
+          label: 'Sync to Walmart',
+          onAction: async () => {
+            console.log('Syncing order to Walmart...');
+            // TODO: Implement actual sync logic here
+            
+            // Simulate sync process
+            setTimeout(() => {
+              setWalmartOrderStatus(prev => ({
+                ...prev,
+                synced: true,
+                walmartOrderId: 'WM-ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+                syncDate: new Date().toISOString()
+              }));
+              
+              // Hide the save bar after successful sync
+              ui.contextualSaveBar.hide();
+              setSaveBarShown(false);
+              
+              // Show success toast
+              ui.toast.show({
+                message: 'Order successfully synced to Walmart!',
+                duration: 3000
+              });
+            }, 2000);
+          }
+        },
+        discardAction: {
+          label: 'Dismiss',
+          onAction: () => {
+            ui.contextualSaveBar.hide();
+            setSaveBarShown(false);
+          }
+        },
+        message: '⚠️ This order requires Walmart synchronization to enable fulfillment'
+      });
+      
+      setSaveBarShown(true);
+    }
+
+    // Show different save bar for sync errors (example)
+    // You can add more conditions here based on your business logic
+  };
+
+  // Function to determine what banner to show based on order status (keeping for in-block banner)
+  const getWalmartBanner = () => {
+    if (isLoading) {
+      return null; // Don't show banner while loading
+    }
+
+    // Since we're using contextual save bar for warnings, show informational banners here
+    if (walmartOrderStatus.synced && !walmartOrderStatus.fulfillmentStatus) {
+      return {
+        tone: 'info',
+        title: 'Walmart Sync Complete',
+        children: 'Order successfully synchronized with Walmart. Awaiting fulfillment processing.'
+      };
+    }
+
+    if (walmartOrderStatus.fulfillmentStatus === 'Shipped') {
+      return {
+        tone: 'success',
+        title: 'Shipped via Walmart',
+        children: `Order fulfilled by Walmart. Tracking: ${walmartOrderStatus.trackingNumber || 'Available soon'}`
+      };
+    }
+
+    return null; // No banner needed
+  };
+
+  const bannerConfig = getWalmartBanner();
+
   return (
     <AdminBlock title="Walmart Order Integration">
       <BlockStack gap="300">
+        {/* Conditional Warning Banner */}
+        {bannerConfig && (
+          <Banner tone={bannerConfig.tone} title={bannerConfig.title}>
+            {bannerConfig.children}
+          </Banner>
+        )}
+
         {/* Order Info */}
         {orderInfo && (
           <>
