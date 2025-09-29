@@ -25,6 +25,95 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
+  
+  const formData = await request.formData();
+  const actionType = formData.get("actionType");
+
+  if (actionType === "getOrderData") {
+    // GraphQL query for order fulfillment data
+    const response = await admin.graphql(
+      `#graphql
+        query GetOrderDeliveryMethods {
+          order(id: "gid://shopify/Order/10197564883236") {
+            id
+            name
+            returns(first: 10) {
+              edges {
+                node {
+                  id
+                  status
+                  name
+                  returnLineItems(first: 10) {
+                    edges {
+                      node {
+                        quantity
+                        returnReason
+                        returnReasonNote
+                        fulfillmentLineItem {
+                          lineItem {
+                            name
+                          }
+                        }
+                        totalWeight {
+                          value
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            fulfillmentOrders(first: 10) {
+              nodes {
+                id
+                createdAt
+                status
+                lineItems(first: 250) {
+                  nodes {
+                    id
+                    totalQuantity
+                    sku
+                  }
+                }
+                deliveryMethod {
+                  id
+                  methodType
+                }
+                assignedLocation {
+                  location{
+                    id
+                    name
+                  }
+                }
+                destination {
+                  address1
+                  address2
+                  city
+                  province
+                  countryCode
+                  zip
+                  company
+                  firstName
+                  lastName
+                  phone
+                  email
+                }
+              }
+            }
+          }
+        }
+      `,
+      {}
+    );
+
+    const responseJson = await response.json();
+    return {
+      actionType: "getOrderData",
+      orderData: responseJson.data
+    };
+  }
+
+  // Default action - generate product
   const color = ["Red", "Orange", "Yellow", "Green"][
     Math.floor(Math.random() * 4)
   ];
@@ -86,6 +175,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const variantResponseJson = await variantResponse.json();
 
   return {
+    actionType: "generateProduct",
     product: responseJson!.data!.productCreate!.product,
     variant:
       variantResponseJson!.data!.productVariantsBulkUpdate!.productVariants,
@@ -99,17 +189,21 @@ export default function Index() {
   const isLoading =
     ["loading", "submitting"].includes(fetcher.state) &&
     fetcher.formMethod === "POST";
-  const productId = fetcher.data?.product?.id.replace(
-    "gid://shopify/Product/",
-    "",
-  );
+  const productId = fetcher.data?.actionType === "generateProduct" ? 
+    (fetcher.data as any)?.product?.id.replace("gid://shopify/Product/", "") : 
+    undefined;
 
   useEffect(() => {
     if (productId) {
       shopify.toast.show("Product created");
     }
-  }, [productId, shopify]);
-  const generateProduct = () => fetcher.submit({}, { method: "POST" });
+    if (fetcher.data?.actionType === "getOrderData") {
+      shopify.toast.show("Order data fetched successfully");
+    }
+  }, [productId, shopify, fetcher.data]);
+
+  const generateProduct = () => fetcher.submit({ actionType: "generateProduct" }, { method: "POST" });
+  const getOrderData = () => fetcher.submit({ actionType: "getOrderData" }, { method: "POST" });
 
   return (
     <Page>
@@ -177,10 +271,17 @@ export default function Index() {
                   </Text>
                 </BlockStack>
                 <InlineStack gap="300">
-                  <Button loading={isLoading} onClick={generateProduct}>
+                  <Button loading={isLoading && !fetcher.data?.actionType} onClick={generateProduct}>
                     Generate a product
                   </Button>
-                  {fetcher.data?.product && (
+                  <Button 
+                    loading={isLoading && fetcher.data?.actionType === "getOrderData"} 
+                    onClick={getOrderData}
+                    variant="secondary"
+                  >
+                    Get Order Data
+                  </Button>
+                  {fetcher.data?.actionType === "generateProduct" && (fetcher.data as any)?.product && (
                     <Button
                       url={`shopify:admin/products/${productId}`}
                       target="_blank"
@@ -190,7 +291,29 @@ export default function Index() {
                     </Button>
                   )}
                 </InlineStack>
-                {fetcher.data?.product && (
+                {/* Show Order Data Results */}
+                {fetcher.data?.actionType === "getOrderData" && (
+                  <>
+                    <Text as="h3" variant="headingMd">
+                      Order Data Query Results
+                    </Text>
+                    <Box
+                      padding="400"
+                      background="bg-surface-active"
+                      borderWidth="025"
+                      borderRadius="200"
+                      borderColor="border"
+                      overflowX="scroll"
+                    >
+                      <pre style={{ margin: 0 }}>
+                        <code>
+                          {JSON.stringify(fetcher.data?.actionType === "getOrderData" ? (fetcher.data as any).orderData : null, null, 2)}
+                        </code>
+                      </pre>
+                    </Box>
+                  </>
+                )}
+                {fetcher.data?.actionType === "generateProduct" && (fetcher.data as any)?.product && (
                   <>
                     <Text as="h3" variant="headingMd">
                       {" "}
@@ -206,7 +329,7 @@ export default function Index() {
                     >
                       <pre style={{ margin: 0 }}>
                         <code>
-                          {JSON.stringify(fetcher.data.product, null, 2)}
+                          {JSON.stringify((fetcher.data as any).product, null, 2)}
                         </code>
                       </pre>
                     </Box>
@@ -224,7 +347,7 @@ export default function Index() {
                     >
                       <pre style={{ margin: 0 }}>
                         <code>
-                          {JSON.stringify(fetcher.data.variant, null, 2)}
+                          {JSON.stringify((fetcher.data as any).variant, null, 2)}
                         </code>
                       </pre>
                     </Box>
