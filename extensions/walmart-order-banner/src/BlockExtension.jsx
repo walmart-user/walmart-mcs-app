@@ -8,7 +8,6 @@ import {
   Text,
   Badge,
   Divider,
-  Banner,
 } from '@shopify/ui-extensions-react/admin';
 
 const TARGET = 'admin.order-details.block.render';
@@ -16,9 +15,10 @@ const TARGET = 'admin.order-details.block.render';
 export default reactExtension(TARGET, () => <App />);
 
 function App() {
-  const {i18n, data} = useApi(TARGET);
+  const {i18n, data, ui} = useApi(TARGET);
   const [orderInfo, setOrderInfo] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [contextualSaveBarShown, setContextualSaveBarShown] = useState(false);
   
   // Mock Walmart sync status - in real app, this would come from your API
   const [walmartOrderStatus, setWalmartOrderStatus] = useState({
@@ -33,6 +33,8 @@ function App() {
   useEffect(() => {
     (async function getOrderInfo() {
       try {
+        console.log('🔄 Fetching order info for:', data?.selected?.[0]?.id);
+        
         const result = await data.query(`
           query Order($id: ID!) {
             order(id: $id) {
@@ -90,47 +92,61 @@ function App() {
     })();
   }, [data]);
 
-  // Function to determine what banner to show based on order status
-  const getWalmartBanner = () => {
-    if (isLoading) {
-      return null; // Don't show banner while loading
+  // Effect to show contextual save bar when order status changes
+  useEffect(() => {
+    if (!isLoading && !contextualSaveBarShown) {
+      showContextualSaveBar();
+    }
+  }, [walmartOrderStatus, isLoading]);
+
+  // Function to show contextual save bar for unsynced orders
+  const showContextualSaveBar = () => {
+    if (isLoading || contextualSaveBarShown) {
+      return;
     }
 
-    // Show warning banner for unsynced orders
+    // Show contextual save bar for unsynced orders
     if (!walmartOrderStatus.synced) {
-      return {
-        tone: 'critical',
-        title: 'Walmart Sync Required',
-        children: 'This order has not been synchronized with Walmart Marketplace. Synchronization is required to enable Walmart fulfillment services.'
-      };
+      console.log('🚨 Attempting to show contextual save bar');
+      
+      try {
+        if (ui && ui.contextualSaveBar) {
+          ui.contextualSaveBar.show({
+            title: 'Walmart Sync Required',
+            message: 'This order needs to be synchronized with Walmart Marketplace',
+            saveAction: {
+              label: 'Sync to Walmart',
+              action: () => {
+                console.log('Sync to Walmart clicked');
+                // Here you would implement the actual sync logic
+                ui.contextualSaveBar.hide();
+              }
+            },
+            discardAction: {
+              label: 'Skip for now',
+              action: () => {
+                console.log('Skip for now clicked');
+                ui.contextualSaveBar.hide();
+              }
+            }
+          });
+          
+          setContextualSaveBarShown(true);
+          console.log('✅ Contextual save bar shown successfully');
+        } else {
+          console.log('❌ Contextual save bar API not available');
+        }
+      } catch (error) {
+        console.error('❌ Error showing contextual save bar:', error);
+      }
+    } else {
+      console.log('ℹ️ Order already synced, no contextual save bar needed');
     }
-
-    // Show info banner for synced but not fulfilled orders
-    if (walmartOrderStatus.synced && !walmartOrderStatus.fulfillmentStatus) {
-      return {
-        tone: 'info',
-        title: 'Walmart Sync Complete',
-        children: 'Order successfully synchronized with Walmart. Awaiting fulfillment processing.'
-      };
-    }
-
-    // Show success banner for shipped orders
-    if (walmartOrderStatus.fulfillmentStatus === 'Shipped') {
-      return {
-        tone: 'success',
-        title: 'Shipped via Walmart',
-        children: `Order fulfilled by Walmart. Tracking: ${walmartOrderStatus.trackingNumber || 'Available soon'}`
-      };
-    }
-
-    return null; // No banner needed
   };
-
-  const bannerConfig = getWalmartBanner();
 
   if (isLoading) {
     return (
-      <AdminBlock title="Walmart Order Integration (In-Block Banner)">
+      <AdminBlock title="Walmart Order Integration (Contextual)">
         <BlockStack gap="300">
           <Text>Loading order information...</Text>
         </BlockStack>
@@ -140,7 +156,7 @@ function App() {
 
   if (!orderInfo) {
     return (
-      <AdminBlock title="Walmart Order Integration (In-Block Banner)">
+      <AdminBlock title="Walmart Order Integration (Contextual)">
         <BlockStack gap="300">
           <Text tone="critical">Failed to load order information</Text>
         </BlockStack>
@@ -149,15 +165,8 @@ function App() {
   }
 
   return (
-    <AdminBlock title="Walmart Order Integration (In-Block Banner)">
+    <AdminBlock title="Walmart Order Integration (Contextual)">
       <BlockStack gap="300">
-        {/* Conditional Warning Banner (in-block) */}
-        {bannerConfig && (
-          <Banner tone={bannerConfig.tone} title={bannerConfig.title}>
-            {bannerConfig.children}
-          </Banner>
-        )}
-
         {/* Order Basic Info */}
         <BlockStack gap="200">
           <InlineStack gap="200" align="space-between">
@@ -201,7 +210,7 @@ function App() {
             </BlockStack>
           ) : (
             <Text tone="critical">
-              Order requires synchronization with Walmart Marketplace to enable fulfillment.
+              Order requires synchronization with Walmart Marketplace. Use contextual save bar to sync.
             </Text>
           )}
         </BlockStack>
