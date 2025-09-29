@@ -31,53 +31,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   if (actionType === "getOrderData") {
     try {
-      // First, let's get the latest orders to find a valid order ID
-      const ordersResponse = await admin.graphql(
-        `#graphql
-          query GetLatestOrders {
-            orders(first: 5, sortKey: CREATED_AT, reverse: true) {
-              nodes {
-                id
-                name
-                createdAt
-              }
-            }
-          }
-        `,
-        {}
-      );
-
-      const ordersJson = await ordersResponse.json();
-      
-      if ((ordersJson as any).errors) {
-        console.error("GraphQL errors:", (ordersJson as any).errors);
-        return {
-          actionType: "getOrderData",
-          error: "Failed to fetch orders: " + JSON.stringify((ordersJson as any).errors),
-          orderData: null
-        };
-      }
-
-      const orders = ordersJson.data?.orders?.nodes;
-      if (!orders || orders.length === 0) {
-        return {
-          actionType: "getOrderData",
-          error: "No orders found in this store",
-          orderData: null
-        };
-      }
-
-      // Use the first (most recent) order
-      const latestOrderId = orders[0].id;
-      
-      // GraphQL query for order fulfillment data
+      // GraphQL query for order fulfillment data - using hardcoded order ID that works with cURL
       const response = await admin.graphql(
         `#graphql
-          query GetOrderDeliveryMethods($orderId: ID!) {
-            order(id: $orderId) {
+          query GetOrderDeliveryMethods {
+            order(id: "gid://shopify/Order/10197564883236") {
               id
               name
-              createdAt
               returns(first: 10) {
                 edges {
                   node {
@@ -144,11 +104,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             }
           }
         `,
-        {
-          variables: {
-            orderId: latestOrderId
-          }
-        }
+        {}
       );
 
       const responseJson = await response.json();
@@ -164,8 +120,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
       return {
         actionType: "getOrderData",
-        orderData: responseJson.data,
-        availableOrders: orders
+        orderData: responseJson.data
       };
     } catch (error) {
       console.error("Error in getOrderData:", error);
@@ -366,56 +321,16 @@ export default function Index() {
                       <>
                         <Banner tone="critical" title="Error fetching order data">
                           <Text as="p">{(fetcher.data as any).error}</Text>
+                          <Text as="p" variant="bodyMd">
+                            Make sure your Shopify app has the necessary permissions (read_orders scope).
+                          </Text>
                         </Banner>
-                        {(fetcher.data as any)?.availableOrders && (
-                          <>
-                            <Text as="h3" variant="headingMd">
-                              Available Orders in Store
-                            </Text>
-                            <Box
-                              padding="400"
-                              background="bg-surface-active"
-                              borderWidth="025"
-                              borderRadius="200"
-                              borderColor="border"
-                              overflowX="scroll"
-                            >
-                              <pre style={{ margin: 0 }}>
-                                <code>
-                                  {JSON.stringify((fetcher.data as any).availableOrders, null, 2)}
-                                </code>
-                              </pre>
-                            </Box>
-                          </>
-                        )}
                       </>
                     ) : (
                       <>
                         <Text as="h3" variant="headingMd">
-                          Order Data Query Results
+                          Order Data Query Results (Order ID: gid://shopify/Order/10197564883236)
                         </Text>
-                        {(fetcher.data as any)?.availableOrders && (
-                          <BlockStack gap="200">
-                            <Text as="p" variant="bodyMd">
-                              Showing data for the most recent order. Available orders in store:
-                            </Text>
-                            <Box
-                              padding="200"
-                              background="bg-surface-secondary"
-                              borderWidth="025"
-                              borderRadius="200"
-                              borderColor="border"
-                            >
-                              <List>
-                                {(fetcher.data as any).availableOrders.map((order: any) => (
-                                  <List.Item key={order.id}>
-                                    {order.name} - {new Date(order.createdAt).toLocaleDateString()}
-                                  </List.Item>
-                                ))}
-                              </List>
-                            </Box>
-                          </BlockStack>
-                        )}
                         <Box
                           padding="400"
                           background="bg-surface-active"
