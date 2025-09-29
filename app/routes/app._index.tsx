@@ -12,6 +12,7 @@ import {
   List,
   Link,
   InlineStack,
+  Banner,
 } from "@shopify/polaris";
 import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
@@ -112,43 +113,50 @@ export default function Index() {
 
   return (
     <Page>
-      <TitleBar title="Remix app template">
+      <TitleBar title="Walmart MCS App">
         <button variant="primary" onClick={generateProduct}>
           Generate a product
         </button>
       </TitleBar>
       <BlockStack gap="500">
+        {/* Walmart Test Environment Banner - Prominent like Shopify's Test Order banner */}
+        <div style={{
+          backgroundColor: '#FEF3C7',
+          border: '1px solid #F59E0B',
+          borderRadius: '8px',
+          padding: '16px',
+          marginBottom: '16px'
+        }}>
+          <Banner
+            title="🧪 Test Environment - Walmart Integration"
+            tone="warning"
+            action={{
+              content: "Configure Production",
+              onAction: () => {
+                // Navigate to settings or show modal
+                shopify.toast.show("Production configuration coming soon!");
+              },
+            }}
+          >
+            <Text as="p">
+              You're currently using the Walmart Marketplace integration in <strong>test mode</strong>. 
+              Orders and product sync are simulated and will not affect live inventory or fulfillment.
+            </Text>
+          </Banner>
+        </div>
         <Layout>
           <Layout.Section>
             <Card>
               <BlockStack gap="500">
                 <BlockStack gap="200">
                   <Text as="h2" variant="headingMd">
-                    Congrats on creating a new Shopify app 🎉
+                    Welcome to Walmart Marketplace Connector 🛒
                   </Text>
                   <Text variant="bodyMd" as="p">
-                    This embedded app template uses{" "}
-                    <Link
-                      url="https://shopify.dev/docs/apps/tools/app-bridge"
-                      target="_blank"
-                      removeUnderline
-                    >
-                      App Bridge
-                    </Link>{" "}
-                    interface examples like an{" "}
-                    <Link url="/app/additional" removeUnderline>
-                      additional page in the app nav
-                    </Link>
-                    , as well as an{" "}
-                    <Link
-                      url="https://shopify.dev/docs/api/admin-graphql"
-                      target="_blank"
-                      removeUnderline
-                    >
-                      Admin GraphQL
-                    </Link>{" "}
-                    mutation demo, to provide a starting point for app
-                    development.
+                    Connect your Shopify store with Walmart Marketplace to sync products, 
+                    manage inventory, and handle order fulfillment seamlessly. This app provides 
+                    real-time synchronization and automated fulfillment services between your 
+                    Shopify store and Walmart's marketplace.
                   </Text>
                 </BlockStack>
                 <BlockStack gap="200">
