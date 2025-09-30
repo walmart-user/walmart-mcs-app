@@ -1,0 +1,9 @@
+{
+  "name": "🏪 Détails Commande Walmart",
+  "welcome": "Informations d'exécution Walmart",
+  "loading": "Chargement des données Walmart...",
+  "error": "Impossible de charger les données Walmart",
+  "noData": "Aucune donnée Walmart disponible",
+  "channelDetails": "Détails du Canal",
+  "fulfillmentOrders": "Commandes d'Exécution"
+}
