@@ -1,9 +1,0 @@
-{
-  "name": "🏪 Walmart Order Details",
-  "welcome": "Walmart fulfillment information",
-  "loading": "Loading Walmart data...",
-  "error": "Unable to load Walmart data",
-  "noData": "No Walmart data available",
-  "channelDetails": "Channel Details",
-  "fulfillmentOrders": "Fulfillment Orders"
-}
