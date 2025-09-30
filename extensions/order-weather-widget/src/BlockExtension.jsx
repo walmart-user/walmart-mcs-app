@@ -8,8 +8,6 @@ import {
   Text,
   Badge,
   Divider,
-  Spinner,
-  Icon,
 } from '@shopify/ui-extensions-react/admin';
 
 // The target used here must match the target used in the extension's toml file (./shopify.extension.toml)
@@ -197,8 +195,7 @@ function App() {
       <AdminBlock title={i18n.translate('name')}>
         <BlockStack>
           <InlineStack align="center">
-            <Spinner size="small" />
-            <Text>{i18n.translate('loading')}</Text>
+            <Text>⏳ {i18n.translate('loading')}</Text>
           </InlineStack>
         </BlockStack>
       </AdminBlock>
