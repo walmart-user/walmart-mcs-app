@@ -1,0 +1,9 @@
+{
+  "name": "🏪 Walmart Fulfillment",
+  "welcome": "Walmart marketplace data",
+  "loading": "Loading...",
+  "error": "Unable to load data",
+  "noData": "No data available",
+  "channelDetails": "Channel Details",
+  "fulfillmentOrders": "Fulfillment Orders"
+}
