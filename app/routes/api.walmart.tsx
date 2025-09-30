@@ -1,5 +1,17 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 
+// Handle CORS preflight requests
+export async function options() {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': 'https://extensions.shopifycdn.com',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Accept',
+    },
+  });
+}
+
 export async function loader({ request }: LoaderFunctionArgs) {
   try {
     console.log('🏪 Walmart API proxy called');
@@ -32,13 +44,26 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const data = await response.json();
     console.log('✅ Walmart API success');
     
-    return json(data);
+    return json(data, {
+      headers: {
+        'Access-Control-Allow-Origin': 'https://extensions.shopifycdn.com',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Accept',
+      },
+    });
     
   } catch (error) {
     console.error('❌ Walmart API proxy error:', error);
     return json(
       { error: error instanceof Error ? error.message : 'Unknown error' }, 
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': 'https://extensions.shopifycdn.com',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Accept',
+        },
+      }
     );
   }
 }
