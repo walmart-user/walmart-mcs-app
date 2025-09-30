@@ -1,0 +1,15 @@
+{
+  "name": "🌤️ Météo de Livraison",
+  "welcome": "Informations météorologiques pour le lieu de commande",
+  "loading": "Chargement des données météo...",
+  "error": "Impossible de charger les données météo",
+  "temperature": "Température",
+  "humidity": "Humidité",
+  "conditions": "Conditions",
+  "location": "Localisation",
+  "feelsLike": "Ressenti",
+  "windSpeed": "Vitesse du Vent",
+  "visibility": "Visibilité",
+  "pressure": "Pression",
+  "uvIndex": "Indice UV"
+}

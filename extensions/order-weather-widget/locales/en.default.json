@@ -1,0 +1,15 @@
+{
+  "name": "🌤️ Delivery Weather",
+  "welcome": "Weather information for order location",
+  "loading": "Loading weather data...",
+  "error": "Unable to load weather data",
+  "temperature": "Temperature",
+  "humidity": "Humidity",
+  "conditions": "Conditions",
+  "location": "Location",
+  "feelsLike": "Feels like",
+  "windSpeed": "Wind Speed",
+  "visibility": "Visibility",
+  "pressure": "Pressure",
+  "uvIndex": "UV Index"
+}
