@@ -1,5 +1,6 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
+import crypto from "crypto";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   // Use console.error for better visibility in Vercel logs
@@ -17,16 +18,62 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       console.error(`  ${key}: ${value}`);
     }
     
-    // Clone request to read body before authentication
-    const requestClone = request.clone();
-    const rawBody = await requestClone.text();
+    // Get raw body for HMAC validation
+    const rawBody = await request.text();
     console.error('📄 RAW REQUEST BODY:', rawBody);
+
+    // const { shop, payload } = await authenticate.webhook(request);
     
-    // Authenticate the callback request (same as webhook authentication)
-    const { shop, payload } = await authenticate.webhook(request);
+    // Fulfillment service callbacks use different authentication than webhooks
+    // They use HMAC-SHA256 with the app's secret, but different headers
+    const hmacHeader = request.headers.get('X-Shopify-Hmac-Sha256');
+    const shopDomain = request.headers.get('X-Shopify-Shop-Domain');
     
-    console.error(`🏪 SHOP: ${shop}`);
-    console.error('📦 AUTHENTICATED PAYLOAD:');
+    console.error('🔐 HMAC Header:', hmacHeader);
+    console.error('🏪 Shop Domain:', shopDomain);
+    
+    // Now validate the HMAC properly
+    if (hmacHeader && process.env.SHOPIFY_API_SECRET) {
+      console.error('🔒 Validating HMAC...');
+      
+      const calculatedHmac = crypto
+        .createHmac('sha256', process.env.SHOPIFY_API_SECRET)
+        .update(rawBody, 'utf8')
+        .digest('base64');
+      
+      console.error('🔑 Received HMAC:', hmacHeader);
+      console.error('🧮 Calculated HMAC:', calculatedHmac);
+      
+      if (!crypto.timingSafeEqual(
+        Buffer.from(hmacHeader, 'base64'), 
+        Buffer.from(calculatedHmac, 'base64')
+      )) {
+        console.error('❌ HMAC validation failed - signatures do not match');
+        return new Response(JSON.stringify({ 
+          status: 'error', 
+          message: 'HMAC validation failed',
+          timestamp: new Date().toISOString()
+        }), { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      console.error('✅ HMAC validation successful');
+    } else {
+      console.error('⚠️ HMAC validation skipped - missing header or secret');
+    }
+    
+    let payload;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch (parseError) {
+      console.error('❌ Failed to parse JSON body:', parseError);
+      payload = rawBody; // Keep as string if not JSON
+    }
+    
+    console.error(`🏪 SHOP: ${shopDomain}`);
+    console.error('📦 PAYLOAD:');
     console.error(JSON.stringify(payload, null, 2));
     
     // Log the kind of request if it exists
@@ -40,8 +87,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return new Response(JSON.stringify({ 
       status: 'success', 
       timestamp: new Date().toISOString(),
-      shop: shop,
-      requestKind: fulfillmentData.kind || 'unknown'
+      shop: shopDomain,
+      requestKind: fulfillmentData.kind || 'unknown',
+      hasHmac: !!hmacHeader
     }), { 
       status: 200,
       headers: {
