@@ -24,7 +24,6 @@ function App() {
   // Test weather API with hardcoded Bangalore location
   useEffect(() => {
     async function testWeatherAPI() {
-      console.log('🧪 Testing weather API for Bangalore...');
       await fetchWeatherData();
     }
 
@@ -37,9 +36,6 @@ function App() {
       const location = 'Bangalore';
       const weatherUrl = `https://wttr.in/${location}?format=j1`;
       
-      console.log('🌐 Fetching weather for Bangalore...');
-      console.log('📍 URL:', weatherUrl);
-      
       const response = await fetch(weatherUrl, {
         method: 'GET',
         headers: {
@@ -47,15 +43,11 @@ function App() {
         },
       });
       
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response ok:', response.ok);
-      
       if (!response.ok) {
         throw new Error(`API responded with status: ${response.status}`);
       }
       
       const weatherData = await response.json();
-      console.log('✅ Weather API response:', weatherData);
       
       // Extract basic data
       const current = weatherData.current_condition?.[0];
@@ -69,14 +61,12 @@ function App() {
           icon: '🌤️'
         };
         
-        console.log('✅ Processed weather data:', processedData);
         setWeatherData(processedData);
       } else {
         throw new Error('No weather data in response');
       }
       
     } catch (err) {
-      console.error('❌ Weather API error:', err);
       setError(`Weather API failed: ${err.message}`);
     } finally {
       setLoading(false);
