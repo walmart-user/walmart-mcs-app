@@ -284,8 +284,128 @@ export default function Index() {
 
   return (
     <Page>
-      <TitleBar title="Walmart Multichannel Services App" />
+      <TitleBar title="Walmart Multichannel Services App">
+        <button variant="primary" onClick={generateProduct}>
+          Generate a product
+        </button>
+      </TitleBar>
       <BlockStack gap="500">
+        {/* Product Generation Section */}
+        <Card>
+          <BlockStack gap="500">
+            <BlockStack gap="200">
+              <Text as="h2" variant="headingMd">
+                Get started with products
+              </Text>
+              <Text as="p" variant="bodyMd">
+                Generate a product with GraphQL and get the JSON output for
+                that product. Learn more about the{" "}
+                <Link
+                  url="https://shopify.dev/docs/api/admin-graphql/latest/mutations/productCreate"
+                  target="_blank"
+                  removeUnderline
+                >
+                  productCreate
+                </Link>{" "}
+                mutation in our API references.
+              </Text>
+            </BlockStack>
+            <InlineStack gap="300">
+              <Button loading={isLoading && !fetcher.data?.actionType} onClick={generateProduct}>
+                Generate a product
+              </Button>
+              <Button 
+                loading={isLoading && fetcher.data?.actionType === "getOrderData"} 
+                onClick={getOrderData}
+                variant="secondary"
+              >
+                Get Order Data
+              </Button>
+              {fetcher.data?.actionType === "generateProduct" && (fetcher.data as any)?.product && (
+                <Button
+                  url={`shopify:admin/products/${productId}`}
+                  target="_blank"
+                  variant="plain"
+                >
+                  View product
+                </Button>
+              )}
+            </InlineStack>
+            {/* Show Order Data Results */}
+            {fetcher.data?.actionType === "getOrderData" && (
+              <>
+                {(fetcher.data as any)?.error ? (
+                  <>
+                    <Banner tone="critical" title="Error fetching order data">
+                      <Text as="p">{(fetcher.data as any).error}</Text>
+                      <Text as="p" variant="bodyMd">
+                        Make sure your Shopify app has the necessary permissions (read_orders scope).
+                      </Text>
+                    </Banner>
+                  </>
+                ) : (
+                  <>
+                    <Text as="h3" variant="headingMd">
+                      Order Data Query Results (Order ID: gid://shopify/Order/10197564883236)
+                    </Text>
+                    <Box
+                      padding="400"
+                      background="bg-surface-active"
+                      borderWidth="025"
+                      borderRadius="200"
+                      borderColor="border"
+                      overflowX="scroll"
+                    >
+                      <pre style={{ margin: 0 }}>
+                        <code>
+                          {JSON.stringify((fetcher.data as any).orderData, null, 2)}
+                        </code>
+                      </pre>
+                    </Box>
+                  </>
+                )}
+              </>
+            )}
+            {fetcher.data?.actionType === "generateProduct" && (fetcher.data as any)?.product && (
+              <>
+                <Text as="h3" variant="headingMd">
+                  productCreate mutation
+                </Text>
+                <Box
+                  padding="400"
+                  background="bg-surface-active"
+                  borderWidth="025"
+                  borderRadius="200"
+                  borderColor="border"
+                  overflowX="scroll"
+                >
+                  <pre style={{ margin: 0 }}>
+                    <code>
+                      {JSON.stringify((fetcher.data as any).product, null, 2)}
+                    </code>
+                  </pre>
+                </Box>
+                <Text as="h3" variant="headingMd">
+                  productVariantsBulkUpdate mutation
+                </Text>
+                <Box
+                  padding="400"
+                  background="bg-surface-active"
+                  borderWidth="025"
+                  borderRadius="200"
+                  borderColor="border"
+                  overflowX="scroll"
+                >
+                  <pre style={{ margin: 0 }}>
+                    <code>
+                      {JSON.stringify((fetcher.data as any).variant, null, 2)}
+                    </code>
+                  </pre>
+                </Box>
+              </>
+            )}
+          </BlockStack>
+        </Card>
         {/* Walmart Account Card */}
         <WalmartAccountCard
           name={walmartAccountData.name}
