@@ -1,4 +1,4 @@
-import { Card, Text, BlockStack, Collapsible, Button, InlineStack, Icon } from "@shopify/polaris";
+import { Card, Text, BlockStack, Collapsible, InlineStack, Icon } from "@shopify/polaris";
 import { ChevronDownIcon, ChevronUpIcon } from "@shopify/polaris-icons";
 import { useState } from "react";
 
@@ -26,10 +26,10 @@ export function FrequentlyAskedQuestions({ items }: FrequentlyAskedQuestionsProp
   };
 
   return (
-    <Card>
-      <BlockStack gap="400">
+    <Card padding="600" background="bg-surface-secondary">
+      <BlockStack gap="500">
         <BlockStack gap="200">
-          <Text as="h2" variant="headingMd">
+          <Text as="h2" variant="headingLg" fontWeight="semibold">
             Frequent ask questions
           </Text>
           <Text as="p" variant="bodyMd" tone="subdued">
@@ -37,20 +37,39 @@ export function FrequentlyAskedQuestions({ items }: FrequentlyAskedQuestionsProp
           </Text>
         </BlockStack>
 
-        <BlockStack gap="200">
-          {items.map((item) => {
+        <BlockStack gap="0">
+          {items.map((item, index) => {
             const isOpen = openItems.has(item.id);
+            const isLast = index === items.length - 1;
+            
             return (
-              <div key={item.id}>
-                <Button
-                  variant="plain"
-                  textAlign="left"
-                  fullWidth
+              <div 
+                key={item.id}
+                style={{
+                  borderBottom: isLast ? 'none' : '1px solid #E1E3E5'
+                }}
+              >
+                <button
                   onClick={() => toggleItem(item.id)}
-                  disclosure={isOpen ? "up" : "down"}
+                  style={{
+                    width: '100%',
+                    padding: '16px 0',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
                 >
-                  {item.question}
-                </Button>
+                  <InlineStack align="space-between" blockAlign="center">
+                    <Text as="span" variant="bodyMd" fontWeight="medium">
+                      {item.question}
+                    </Text>
+                    <Icon 
+                      source={isOpen ? ChevronUpIcon : ChevronDownIcon} 
+                      tone="subdued"
+                    />
+                  </InlineStack>
+                </button>
                 
                 <Collapsible
                   open={isOpen}
@@ -58,12 +77,8 @@ export function FrequentlyAskedQuestions({ items }: FrequentlyAskedQuestionsProp
                   transition={{ duration: "200ms", timingFunction: "ease-in-out" }}
                 >
                   <div style={{ 
-                    paddingTop: '12px', 
-                    paddingBottom: '12px',
-                    paddingLeft: '16px',
-                    borderLeft: '2px solid #E1E3E5',
-                    marginLeft: '8px',
-                    marginTop: '8px'
+                    paddingBottom: '16px',
+                    paddingRight: '24px'
                   }}>
                     <Text as="p" variant="bodyMd" tone="subdued">
                       {item.answer}
@@ -78,21 +93,22 @@ export function FrequentlyAskedQuestions({ items }: FrequentlyAskedQuestionsProp
         {/* Support link */}
         <div style={{ 
           textAlign: 'center', 
-          paddingTop: '16px',
-          borderTop: '1px solid #E1E3E5'
+          paddingTop: '24px'
         }}>
           <Text as="p" variant="bodyMd" tone="subdued">
             Need support? Create a ticket on{" "}
-            <Text as="span" variant="bodyMd" tone="base">
-              <a 
-                href="http://walmarttestexample.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                style={{ color: '#005BD3', textDecoration: 'none' }}
-              >
-                http://walmarttestexample.com
-              </a>
-            </Text>
+            <a 
+              href="http://walmarttestexample.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ 
+                color: '#005BD3', 
+                textDecoration: 'none',
+                fontWeight: '500'
+              }}
+            >
+              http://walmarttestexample.com
+            </a>
           </Text>
         </div>
       </BlockStack>
