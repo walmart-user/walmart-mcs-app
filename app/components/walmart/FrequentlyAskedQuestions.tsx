@@ -26,7 +26,7 @@ export function FrequentlyAskedQuestions({ items }: FrequentlyAskedQuestionsProp
   };
 
   return (
-    <Card padding="600" background="bg-surface-secondary">
+    <div style={{ padding: '24px 0' }}>
       <BlockStack gap="500">
         <BlockStack gap="200">
           <Text as="h2" variant="headingLg" fontWeight="semibold">
@@ -112,6 +112,6 @@ export function FrequentlyAskedQuestions({ items }: FrequentlyAskedQuestionsProp
           </Text>
         </div>
       </BlockStack>
-    </Card>
+    </div>
   );
 }
