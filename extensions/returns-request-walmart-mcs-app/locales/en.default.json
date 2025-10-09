@@ -1,0 +1,9 @@
+{
+  "name": "Returns Request Walmart MCS App",
+  "welcome": "Returns Request for Walmart MCS",
+  "reasonLabel": "Reason for return",
+  "reasonPlaceholder": "Enter the reason for return...",
+  "orderItemsLabel": "Order Items",
+  "returnButton": "Submit Return Request",
+  "cancelButton": "Cancel"
+}
