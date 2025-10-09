@@ -21,6 +21,31 @@ function Extension() {
   useEffect(() => {
     (async function getOrderInfo() {
       try {
+        // Check if we have valid data
+        if (!data || !data.selected || !data.selected[0] || !data.selected[0].id) {
+          console.error('Invalid order data:', data);
+          // Set basic info from available data if possible
+          if (data && data.selected && data.selected[0]) {
+            setOrderInfo({
+              id: data.selected[0].id || 'Unknown',
+              name: `Order #${data.selected[0].id || 'Unknown'}`,
+              lineItems: []
+            });
+          }
+          setLoading(false);
+          return;
+        }
+
+        const orderId = data.selected[0].id;
+        console.log('Fetching order with ID:', orderId);
+        
+        // Set basic order info immediately
+        setOrderInfo({
+          id: orderId,
+          name: `Order #${orderId.split('/').pop()}`, // Extract order number from GraphQL ID
+          lineItems: []
+        });
+
         const getOrderQuery = {
           query: `query Order($id: ID!) {
             order(id: $id) {
@@ -46,7 +71,7 @@ function Extension() {
               }
             }
           }`,
-          variables: {id: data.selected[0].id},
+          variables: {id: orderId},
         };
 
         const res = await fetch("shopify:admin/api/graphql.json", {
@@ -55,16 +80,28 @@ function Extension() {
         });
 
         if (!res.ok) {
-          console.error('Network error');
+          console.error('Network error:', res.status, res.statusText);
           return;
         }
 
         const orderData = await res.json();
+        console.log('Raw order response:', orderData);
+
+        if (orderData.errors) {
+          console.error('GraphQL errors:', orderData.errors);
+          return;
+        }
+
+        if (!orderData.data || !orderData.data.order) {
+          console.error('No order data found:', orderData);
+          return;
+        }
+
         const order = orderData.data.order;
         
         setOrderInfo({
           id: order.id,
-          name: order.name,
+          name: order.name || `Order #${order.id.split('/').pop()}`,
           lineItems: order.lineItems.edges.map(edge => edge.node)
         });
         
@@ -124,27 +161,40 @@ function Extension() {
 
   return (
     <s-admin-action>
-      <s-stack direction="block" spacing="base">
+      <s-stack direction="block">
         <s-text type="strong">{i18n.translate('welcome')}</s-text>
         <s-text>Order: {orderInfo.name}</s-text>
         
+        {/* Debug information */}
+        <s-stack direction="block">
+          <s-text type="strong">Debug Info:</s-text>
+          <s-text>Raw data: {JSON.stringify(data, null, 2)}</s-text>
+          <s-text>Order ID: {orderInfo.id}</s-text>
+          <s-text>Line Items Count: {orderInfo.lineItems.length}</s-text>
+        </s-stack>
+        
         {/* Reason for return text box */}
-        <s-stack direction="block" spacing="tight">
+        <s-stack direction="block">
           <s-text type="strong">{i18n.translate('reasonLabel')}</s-text>
           <s-text-area
             value={returnReason}
-            onInput={(e) => setReturnReason(e.target.value)}
+            onInput={(e) => {
+              const target = e.target;
+              if (target && 'value' in target && typeof target.value === 'string') {
+                setReturnReason(target.value);
+              }
+            }}
             placeholder={i18n.translate('reasonPlaceholder')}
-            rows="3"
+            rows={3}
           />
         </s-stack>
 
         {/* Order items list */}
-        <s-stack direction="block" spacing="tight">
+        <s-stack direction="block">
           <s-text type="strong">{i18n.translate('orderItemsLabel')}</s-text>
-          <s-stack direction="block" spacing="extra-tight">
+          <s-stack direction="block">
             {orderInfo.lineItems.map((item, index) => (
-              <s-stack key={item.id} direction="inline" alignment="center" spacing="tight">
+              <s-stack key={item.id} direction="inline">
                 <s-text>
                   {item.quantity}x {item.title}
                   {item.variant?.title && item.variant.title !== 'Default Title' && 
