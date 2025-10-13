@@ -16,8 +16,8 @@ database.sqlite
 
 .cursorrules
 
-
-
+LOCAL-DEVELOPMENT.md
+DEPLOYMENT-WALMART.md
 
 
 /extensions/*/dist

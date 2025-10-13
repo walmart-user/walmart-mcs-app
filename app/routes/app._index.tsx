@@ -14,7 +14,31 @@ import {
   InlineStack,
   Banner,
 } from "@shopify/polaris";
-import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
+import { isLocalDevelopment } from "../config";
+
+// Import real App Bridge components
+import { TitleBar as ShopifyTitleBar, useAppBridge as useShopifyAppBridge } from "@shopify/app-bridge-react";
+
+// Mock App Bridge components for local development
+const MockTitleBar = ({ title, children }: { title: string, children?: React.ReactNode }) => (
+  <div style={{ padding: '16px', borderBottom: '1px solid #ddd', display: 'flex', justifyContent: 'space-between' }}>
+    <h1 style={{ margin: 0 }}>{title}</h1>
+    <div>{children}</div>
+  </div>
+);
+
+// Mock useAppBridge hook
+const mockUseAppBridge = () => ({
+  toast: {
+    show: (message: string, options?: { isError?: boolean }) => {
+      console.log(`Toast: ${message}`, options);
+    }
+  }
+});
+
+// Use real or mock components based on environment
+const TitleBar = isLocalDevelopment ? MockTitleBar : ShopifyTitleBar;
+const useAppBridge = isLocalDevelopment ? mockUseAppBridge : useShopifyAppBridge;
 import { authenticate } from "../shopify.server";
 import { WalmartAccountCard, MultichannelConfigurationGuide, FrequentlyAskedQuestions } from "../components/walmart";
 
